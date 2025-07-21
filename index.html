@@ -1,0 +1,1438 @@
+<!DOCTYPE html>
+<html lang="bn">
+  <head>
+    <script>
+      document.addEventListener("contextmenu", (event) =>
+        event.preventDefault()
+      );
+      document.addEventListener("keydown", (event) => {
+        if (
+          (event.ctrlKey &&
+            ["u", "s", "i", "j"].includes(event.key.toLowerCase())) ||
+          event.key === "F12"
+        ) {
+          event.preventDefault();
+        }
+      });
+    </script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Online Exam</title>
+    <!-- Chart.js CDN -->
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap");
+
+      body {
+        font-family: "Hind Siliguri", sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .container {
+        font-family: "Hind Siliguri", sans-serif;
+        width: 100%;
+        margin: auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        min-height: 80vh;
+      }
+
+      .exam-content {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      h1 {
+        color: #1b0b54;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+
+      #timer {
+        font-size: 20px;
+        color: #1b0b54;
+        margin-bottom: 5px;
+        font-weight: normal;
+        text-align: center;
+      }
+
+      #exam-info {
+        font-size: 16px;
+        color: black;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      #exam {
+        width: 100%;
+        min-height: 100px;
+      }
+
+      .chart-container {
+        width: 200px;
+        height: 200px;
+        margin: 10px auto;
+        background-color: #f9f9f9;
+        border-radius: 15px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        display: none;
+        padding: 10px;
+      }
+
+      .chart-container.visible {
+        display: block;
+      }
+
+      .question-container {
+        text-align: left;
+        margin-bottom: 20px;
+        display: block;
+      }
+
+      .question-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+      }
+
+      .options {
+        margin-top: 10px;
+      }
+
+      .option {
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 5px;
+        text-transform: uppercase;
+      }
+
+      .circle {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid #1b0b54;
+        margin-right: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #1b0b54;
+        font-weight: bold;
+        font-size: 18px;
+      }
+
+      .selected .circle {
+        background-color: #1b0b54;
+        color: white;
+      }
+
+      .correct-text {
+        color: green !important;
+      }
+
+      .incorrect-text {
+        color: #ff0800 !important;
+      }
+
+      .unattempted-text {
+        color: orange !important;
+      }
+
+      #submitBtn {
+        font-family: hind siliguri;
+        padding: 15px 30px;
+        background-color: #1b0b54;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-size: 18px;
+        font-weight: bold;
+        border-radius: 10px;
+        margin-top: 20px;
+        width: 200px;
+        transition: background-color 0.3s ease;
+      }
+
+      #submitBtn:hover {
+        background-color: #1b0b54;
+      }
+
+      .popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 20px;
+        width: 300px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        text-align: center;
+        display: none;
+        z-index: 1000;
+        transition: transform 0.5s ease, opacity 0.5s ease;
+      }
+
+      .popup.slide-out {
+        transform: translate(-50%, -100%);
+        opacity: 0;
+      }
+
+      .popup-header {
+        background-color: #1b0b54;
+        color: white;
+        padding: 10px;
+        font-size: 20px;
+        font-weight: bold;
+        border-radius: 10px 10px 0 0;
+      }
+
+      .popup-body {
+        padding: 15px;
+      }
+
+      .popup-body p {
+        margin: 10px 0;
+      }
+
+      .confirm-btn {
+        font-family: hind siliguri;
+        background-color: #34c759;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .confirm-btn:hover {
+        background-color: #34c759;
+      }
+
+      .cancel-btn {
+        background-color: #ff3b30;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .cancel-btn:hover {
+        background-color: #e02b21;
+      }
+
+      .explanation-dropdown {
+        display: none;
+        margin-top: 10px;
+      }
+
+      .explanation-dropdown.visible {
+        display: block;
+      }
+
+      .explanation-btn {
+        background-color: #1b0b54;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        font-family: "Hind Siliguri", sans-serif;
+        width: 40%;
+        text-align: left;
+        position: relative;
+      }
+
+      .explanation-btn:hover {
+        background-color: #1b0b54;
+      }
+
+      .explanation-btn::after {
+        content: "▼";
+        position: absolute;
+        right: 10px;
+        font-size: 12px;
+      }
+
+      .explanation-btn.active::after {
+        content: "▲";
+      }
+
+      .explanation-content {
+        display: none;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 14px;
+        color: #000000;
+        text-align: left;
+        max-height: 450px;
+        overflow-y: auto;
+        margin-top: 5px;
+      }
+
+      .explanation-content.visible {
+        display: block;
+      }
+
+      .explanation-content p {
+        margin: 0 0 10px 0;
+      }
+
+      .explanation-content ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .explanation-content li {
+        margin-bottom: 5px;
+      }
+
+      .explanation-content strong {
+        color: #1b0b54;
+      }
+
+      .explanation-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+        display: block;
+      }
+
+      .locked .option {
+        pointer-events: none;
+        cursor: default;
+      }
+
+      .locked .option.selected {
+        pointer-events: none;
+        cursor: default;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container" id="examContainer">
+      <div class="exam-content">
+        <h1>কেমিস্ট্রি ১ম অনুশীলন</h1>
+        <div id="timer"></div>
+        <div id="exam-info"></div>
+        <div class="chart-container">
+          <canvas id="scoreChart"></canvas>
+        </div>
+        <div id="exam">
+          <!-- Questions will be generated dynamically -->
+        </div>
+        <button id="submitBtn">সাবমিট</button>
+      </div>
+    </div>
+
+    <div class="popup" id="scorePopup">
+      <div class="popup-header">তোমার স্কোর</div>
+      <div class="popup-body">
+        <p><strong>মোট প্রশ্ন:</strong> <span id="totalQuestions"></span></p>
+        <p>
+          <strong>উত্তর দিয়েছো:</strong>
+          <span style="color: #000000" id="answered"></span>
+        </p>
+        <p>
+          <strong>সঠিক উত্তর:</strong>
+          <span style="color: #0ab853" id="correctAnswers"></span>
+        </p>
+        <p>
+          <strong>ভুল উত্তর:</strong>
+          <span style="color: #f81010" id="wrongAnswers"></span>
+        </p>
+        <p>
+          <strong>অনুত্তরিত:</strong>
+          <span style="color: #ffc801" id="unanswered"></span>
+        </p>
+        <p><strong>তোমার চূড়ান্ত স্কোর:</strong></p>
+        <h2 style="color: #1b0b54"><span id="finalScore"></span></h2>
+        <form id="scoreForm" action="https://formspree.io/f/xpby" method="POST">
+          <input type="hidden" name="userID" id="formUserID" />
+          <input type="hidden" name="finalScore" id="formFinalScore" />
+          <input type="hidden" name="correctAnswers" id="formCorrectAnswers" />
+          <input type="hidden" name="wrongAnswers" id="formWrongAnswers" />
+          <input type="hidden" name="unanswered" id="formUnanswered" />
+          <button
+            type="submit"
+            class="confirm-btn"
+            style="background-color: #1b0b54"
+          >
+            <b>ওকে</b>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="popup" id="confirmPopup">
+      <div class="popup-header">কনফার্ম করো</div>
+      <div class="popup-body">
+        <p>
+          ভালো করে দেখে নাও! <br />
+          পরীক্ষা শেষ করতে চাও তো?
+        </p>
+        <button class="confirm-btn" onclick="confirmSubmit()">
+          <b>হ্যাঁ</b>
+        </button>
+        <button class="cancel-btn" onclick="cancelSubmit()"><b>না</b></button>
+      </div>
+    </div>
+
+    <script>
+      let chartInstance = null;
+
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM fully loaded and parsed");
+        const examContainer = document.getElementById("examContainer");
+        if (!examContainer) {
+          console.error("Exam container not found!");
+          return;
+        }
+        try {
+          sessionStorage.setItem("isLoggedIn", "true");
+          sessionStorage.setItem("userID", "anonymous");
+          console.log(
+            "Session storage set: isLoggedIn = true, userID = anonymous"
+          );
+        } catch (e) {
+          console.error("Session storage error:", e);
+        }
+        examContainer.style.display = "block";
+        console.log("Exam container displayed");
+        startTimer();
+        generateQuestions();
+
+        window.addEventListener("beforeunload", function (event) {
+          if (
+            examContainer.style.display === "block" &&
+            sessionStorage.getItem("isLoggedIn") === "true"
+          ) {
+            autoSubmitScore();
+          }
+        });
+      });
+
+      const questions = [
+        {
+          id: 1,
+          question: "কোয়াগুলেশন পদ্ধতি কোনটি?",
+          options: {
+            a: "দুধ থেকে ছানা তৈরি",
+            b: "As₂S₃ সল-এ NaCl যোগ করলে অধঃক্ষেপ পড়ে",
+            c: "মাখন থেকে ঘি তৈরি",
+            d: "চিনির গাঢ় তপ্ত দ্রবণকে শীতল করলে চিনির দানা তৈরি হয়",
+          },
+          correct: "b",
+          explanation:
+            "<p>কোয়াগুলেশন হলো কলয়েডাল দ্রবণের কণাগুলোকে একত্রিত করে অধঃক্ষিপ্ত করার প্রক্রিয়া। As₂S₃ সল (যা একটি ঋণাত্মক চার্জযুক্ত কলয়েড) এর সাথে NaCl (সোডিয়াম ক্লোরাইড) যোগ করলে, Na⁺ আয়ন ঋণাত্মক চার্জযুক্ত As₂S₃ কণাগুলোকে নিষ্ক্রিয় করে এবং কণাগুলো একত্রিত হয়ে অধঃক্ষিপ্ত হয়। এটি কোয়াগুলেশনের একটি উৎকৃষ্ট উদাহরণ। দুধ থেকে ছানা তৈরিও কোয়াগুলেশন, তবে প্রদত্ত বিকল্পগুলোর মধ্যে (b) একটি ক্লাসিক্যাল কোয়াগুলেশন উদাহরণ।</p>",
+        },
+        {
+          id: 2,
+          question: "দুধ কলয়েড বা ইমালশন কারণ-",
+          options: {
+            a: "এটি পানিতে দ্রবণীয় কার্বোহাইড্রেট",
+            b: "এটি নবজাত শিশুর খাদ্যের প্রধান উৎস",
+            c: "দুধ ভিটামিনের সমৃদ্ধ ভাণ্ডার",
+            d: "এটি পানিতে দ্রবণীয় চর্বির সূক্ষ্ম কণা",
+          },
+          correct: "d",
+          explanation:
+            "<p>দুধকে একটি ইমালশন বা কলয়েড বলা হয় কারণ এটি মূলত পানিতে (বিস্তার মাধ্যম) চর্বির (বিস্তৃত দশা) সূক্ষ্ম কণার অসমসত্ত্ব মিশ্রণ। এই চর্বির কণাগুলো এতটাই ছোট যে তারা সহজে থিতিয়ে পড়ে না, বরং পানিতে সুষমভাবে ছড়িয়ে থাকে। তাই এটি তরলে তরলের একটি কলয়েডাল দ্রবণ, যা ইমালশন নামে পরিচিত।</p>",
+        },
+        {
+          id: 3,
+          question: "কোনটি কলয়েড?",
+          options: {
+            a: "স্বর্ণ",
+            b: "গ্রানাইট",
+            c: "দুধ",
+            d: "ফোম",
+          },
+          correct: "c",
+          explanation:
+            "<p>কলয়েড হলো এমন এক ধরনের মিশ্রণ যেখানে একটি পদার্থের ক্ষুদ্র কণা অন্য একটি পদার্থের মধ্যে সুষমভাবে বিস্তৃত থাকে, কিন্তু দ্রবীভূত হয় না এবং থিতিয়ে পড়ে না। দুধ একটি পরিচিত কলয়েড, যা মূলত পানিতে চর্বির সূক্ষ্ম কণার ইমালশন। স্বর্ণ (ধাতু) এবং গ্রানাইট (শিলার মিশ্রণ) কলয়েড নয়। ফোম একটি কলয়েডাল সিস্টেম যেখানে গ্যাস তরল বা কঠিনে বিস্তৃত থাকে। তবে প্রদত্ত বিকল্পগুলির মধ্যে, দুধ একটি আদর্শ এবং বহুল পরিচিত কলয়েড।</p>",
+        },
+        {
+          id: 4,
+          question: "নিচের কোন মন্তব্যটি সঠিক?",
+          options: {
+            a: "কলয়েড একটি দ্বি-দশাবিশিষ্ট স্থায়ী অসমসত্ত্ব সিস্টেম",
+            b: "দই একটি সল",
+            c: "সাবানের ফেনা ইমালশন",
+            d: "কলয়েড দ্রবণ উত্তপ্ত করলে অভিকর্ষ বলের প্রভাবে কণা অধঃক্ষিপ্ত হয়",
+          },
+          correct: "a",
+          explanation:
+            "<p>কলয়েড হলো একটি দ্বি-দশাবিশিষ্ট (বিস্তৃত দশা ও বিস্তার মাধ্যম) অসমসত্ত্ব সিস্টেম, যা তুলনামূলকভাবে স্থায়ী হয়। এর কণাগুলো দ্রবণের কণার চেয়ে বড় কিন্তু সাসপেনশনের কণার চেয়ে ছোট এবং থিতিয়ে পড়ে না। দই একটি জেল, সল নয়। সাবানের ফেনা একটি ফোম, ইমালশন নয় (ইমালশন তরলে তরলের মিশ্রণ)। কলয়েড দ্রবণ উত্তপ্ত করলে কণাগুলো অধঃক্ষিপ্ত হয় না, বরং তাদের স্থিতিশীলতা নষ্ট হতে পারে বা কোয়াগুলেশন ঘটতে পারে, কিন্তু অভিকর্ষ বলের প্রভাবে নয়।</p>",
+        },
+        {
+          id: 5,
+          question: "অ্যারোসলে নিম্নের কোন যৌগটি ব্যবহার করা হয়?",
+          options: {
+            a: "ওজোন",
+            b: "গ্যামাক্সিন",
+            c: "ফ্রেওন",
+            d: "ট্রাইওকোন",
+          },
+          correct: "c",
+          explanation:
+            "<p>অ্যারোসল ক্যানগুলোতে প্রপেল্যান্ট হিসেবে একসময় ফ্রেওন (CFCs - ক্লোরোফ্লুরোকার্বন) ব্যাপকভাবে ব্যবহৃত হতো। ফ্রেওন গ্যাস চাপে তরলে রূপান্তরিত হয় এবং চাপ কমালে গ্যাসীয় অবস্থায় ফিরে আসে, যা অ্যারোসল স্প্রে করতে সাহায্য করে। তবে, পরিবেশগত কারণে (ওজোন স্তরের ক্ষতি) ফ্রেওনের ব্যবহার বর্তমানে অনেক কমে গেছে এবং এর পরিবর্তে অন্যান্য পরিবেশ-বান্ধব প্রপেল্যান্ট ব্যবহার করা হয়। ওজোন একটি গ্যাস, গ্যামাক্সিন একটি কীটনাশক এবং ট্রাইওকোন রাসায়নিক যৌগ হিসেবে পরিচিত নয়।</p>",
+        },
+        {
+          id: 6,
+          question: "দই একটি-",
+          options: {
+            a: "সল",
+            b: "জেল",
+            c: "ইমালসনকারক",
+            d: "কলয়েডীয় দ্রবণ",
+          },
+          correct: "b",
+          explanation:
+            "<p>দই হলো এক প্রকার জেল। জেল হলো একটি কলয়েডাল সিস্টেম যেখানে একটি তরল পদার্থ কঠিন মাধ্যমে আটকে থাকে এবং একটি অর্ধ-কঠিন, স্থিতিস্থাপক গঠন তৈরি করে। দুধের প্রোটিন (ক্যাসিন) যখন ল্যাকটিক অ্যাসিডের প্রভাবে জমাট বাঁধে, তখন একটি জেল তৈরি হয়, যা আমরা দই হিসেবে চিনি। সল হলো তরলে কঠিন কণার বিস্তার, ইমালসনকারক ইমালশন তৈরিতে সাহায্য করে, এবং দই একটি কলয়েডীয় দ্রবণ হলেও জেলের বৈশিষ্ট্যই এর প্রধান।</p>",
+        },
+        {
+          id: 7,
+          question: "মেঘ এক ধরনের-",
+          options: {
+            a: "জেল",
+            b: "ফোম",
+            c: "অ্যারোসল",
+            d: "ইমালশন",
+          },
+          correct: "c",
+          explanation:
+            "<p>মেঘ হলো এক ধরনের অ্যারোসল। অ্যারোসল হলো গ্যাসীয় মাধ্যমে (যেমন বায়ু) কঠিন বা তরল কণার একটি কলয়েডাল বিস্তার। মেঘের ক্ষেত্রে, এটি বায়ুমণ্ডলে ক্ষুদ্র জলীয় কণা বা বরফ কণার একটি বিস্তার। জেল এবং ফোম হলো তরল বা কঠিনে গ্যাস বা তরলের বিস্তার, এবং ইমালশন হলো তরলে তরলের বিস্তার।</p>",
+        },
+        {
+          id: 8,
+          question: "পনির এক ধরনের-",
+          options: {
+            a: "অ্যারোসল",
+            b: "ফোম",
+            c: "জেল",
+            d: "সল",
+          },
+          correct: "c",
+          explanation:
+            "<p>পনির হলো এক প্রকার জেল। পনির মূলত দুধের ক্যাসিন প্রোটিনের জমাট বাঁধা রূপ। দুধের প্রোটিন এবং চর্বি একত্রিত হয়ে একটি জালিকা তৈরি করে যেখানে পানি আটকে থাকে, ফলে এটি একটি অর্ধ-কঠিন, স্থিতিস্থাপক কাঠামো লাভ করে। এটি জেল তৈরির প্রক্রিয়ার একটি উৎকৃষ্ট উদাহরণ। অ্যারোসল, ফোম এবং সল ভিন্ন ধরনের কলয়েডাল সিস্টেম।</p>",
+        },
+        {
+          id: 9,
+          question: "কোনটি পানিতে তেলের ইমালশন-",
+          options: {
+            a: "দই",
+            b: "পনির",
+            c: "পুডিং",
+            d: "দুধ",
+          },
+          correct: "d",
+          explanation:
+            "<p>দুধ হলো পানিতে তেলের (চর্বির) একটি ইমালশন। ইমালশন হলো দুটি অমিশ্রণীয় তরলের অসমসত্ত্ব মিশ্রণ যেখানে একটি তরল অন্য তরলে সূক্ষ্মভাবে বিস্তৃত থাকে। দুধের ক্ষেত্রে, ক্ষুদ্র চর্বির কণাগুলো পানির মধ্যে সুষমভাবে ছড়িয়ে থাকে। দই এবং পনির হলো জেল, এবং পুডিং একটি জেল বা ঘন সাসপেনশন হতে পারে, কিন্তু সরাসরি পানিতে তেলের ইমালশন নয়।</p>",
+        },
+        {
+          id: 10,
+          question: "নিচের কোন বস্তুটি ইমালশন-",
+          options: {
+            a: "পানিতে চিনির দ্রবণ",
+            b: "দুধ",
+            c: "মাখন",
+            d: "পানিতে লবণের দ্রবণ",
+          },
+          correct: "b",
+          explanation:
+            "<p>ইমালশন হলো দুটি অমিশ্রণীয় তরলের মিশ্রণ যেখানে একটি তরল অন্যটিতে সূক্ষ্ম কণা আকারে বিস্তৃত থাকে। দুধ হলো একটি ইমালশন, যেখানে চর্বির কণাগুলো পানিতে ছড়িয়ে থাকে। মাখনও একটি ইমালশন, তবে এটি পানিতে তেলের চেয়ে তেলে পানির ইমালশন (অপেক্ষাকৃত কম পানি)। পানিতে চিনির দ্রবণ এবং পানিতে লবণের দ্রবণ হলো সমসত্ত্ব দ্রবণ, ইমালশন নয়।</p>",
+        },
+        {
+          id: 11,
+          question: "কলয়েড কণাগুলোকে কোন পদ্ধতিতে আলাদা করা যেতে পারে?",
+          options: {
+            a: "ফিল্ট্রেশন",
+            b: "আল্ট্রাফিল্ট্রেশন",
+            c: "মেমব্রেন",
+            d: "পরিস্রাবণ",
+          },
+          correct: "b",
+          explanation:
+            "<p>কলয়েড কণাগুলো সাধারণ ফিল্টার পেপারের ছিদ্রের চেয়ে ছোট হয়, তাই ফিল্ট্রেশন (পরিস্রাবণ) দ্বারা এদের আলাদা করা যায় না। তবে আল্ট্রাফিল্ট্রেশন (Ultrafiltration) পদ্ধতিতে কলয়েড কণাগুলোকে আলাদা করা যেতে পারে। এই পদ্ধতিতে বিশেষ ধরনের অতি-সূক্ষ্ম ছিদ্রযুক্ত মেমব্রেন (Ultrafilter) ব্যবহার করা হয়, যা কলয়েড কণাগুলোকে ধরে রাখে কিন্তু দ্রাবক এবং দ্রবীভূত ক্ষুদ্র কণাগুলোকে পার হতে দেয়।</p>",
+        },
+        {
+          id: 12,
+          question: "কোনটি সাসপেনশন দ্রব্যের কণার ব্যাস?",
+          options: {
+            a: "10<sup>-3</sup> cm",
+            b: "10<sup>-4</sup> cm",
+            c: "10<sup>-5</sup> cm",
+            d: "10<sup>-2</sup> cm",
+          },
+
+          correct: "a",
+          explanation:
+            "<p>সাসপেনশন দ্রব্যের কণাগুলোর ব্যাস সাধারণত ১০<sup>-৫</sup> সেমি এর বেশি হয় এবং খালি চোখে দৃশ্যমান হয়। প্রদত্ত বিকল্পগুলোর মধ্যে, ১০<sup>-৩</sup> সেমি (বা ১০,০০০ ন্যানোমিটার) হলো সাসপেনশন কণার ব্যাসের সাধারণ পরিসরের মধ্যে। কলয়েড কণার ব্যাস সাধারণত ১০<sup>-৭</sup> থেকে ১০<sup>-৫</sup> সেমি এর মধ্যে থাকে এবং দ্রবণীয় কণার ব্যাস ১০<sup>-৭</sup> সেমি এর কম হয়।</p>",
+        },
+        {
+          id: 13,
+          question: "নিম্নের কোনটি মিশ্রণ নয়?",
+          options: {
+            a: "সমুদ্রের পানি",
+            b: "কাদামাটি",
+            c: "বায়ু",
+            d: "প্রোপ্রেন 1, 2, 3-ট্রাইঅল",
+          },
+          correct: "d",
+          explanation:
+            "<p>মিশ্রণ হলো দুই বা ততোধিক পদার্থের ভৌত সংমিশ্রণ যেখানে উপাদানগুলো রাসায়নিকভাবে সংযুক্ত থাকে না। সমুদ্রের পানি (লবণ ও পানির মিশ্রণ), কাদামাটি (কঠিন কণা ও পানির মিশ্রণ) এবং বায়ু (বিভিন্ন গ্যাসের মিশ্রণ) প্রতিটিই মিশ্রণের উদাহরণ। কিন্তু প্রোপ্রেন 1, 2, 3-ট্রাইঅল (Propane-1,2,3-triol), যা গ্লিসারল নামেও পরিচিত, একটি বিশুদ্ধ রাসায়নিক যৌগ (C₃H₈O₃), এটি কোনো মিশ্রণ নয়।</p>",
+        },
+        {
+          id: 14,
+          question: "কলয়েড কণার আকৃতি (ব্যাস) কত?",
+          options: {
+            a: "0.1~2.0 nm",
+            b: "2.0~500 nm",
+            c: "500-700 nm",
+            d: "> 70 nm",
+          },
+          correct: "b",
+          explanation:
+            "<p>কলয়েড কণার আকৃতি (ব্যাস) দ্রবণীয় কণার চেয়ে বড় কিন্তু সাসপেনশন কণার চেয়ে ছোট হয়। সাধারণত, কলয়েড কণার ব্যাস ২.০ ন্যানোমিটার (nm) থেকে ৫০০ ন্যানোমিটার (nm) পর্যন্ত হয়ে থাকে। ০.১-২.০ ন্যানোমিটার পরিসরটি সাধারণত প্রকৃত দ্রবণের কণার জন্য ব্যবহৃত হয়। এই আকারের কণাগুলো খালি চোখে বা সাধারণ অণুবীক্ষণ যন্ত্রে দেখা যায় না, তবে এদের আলোক বিক্ষেপণ ধর্ম (যেমন টিন্ডাল প্রভাব) দেখা যায়।</p>",
+        },
+        {
+          id: 15,
+          question: "কোন প্রক্রিয়া দুধ থেকে ছানা (curdled milk) তৈরি করে?",
+          options: {
+            a: "অক্সিডেশন",
+            b: "ফারমেনটেশন",
+            c: "কোয়াগুলেশন",
+            d: "আর্দ্র বিশ্লেষণ",
+          },
+          correct: "c",
+          explanation:
+            "<p>দুধ থেকে ছানা (curdled milk) তৈরির প্রক্রিয়াকে কোয়াগুলেশন (Coagulation) বলে। এই প্রক্রিয়ায় দুধের প্রধান প্রোটিন, ক্যাসিন, অ্যাসিড (যেমন ল্যাকটিক অ্যাসিড) বা রেনিন এনজাইমের প্রভাবে জমাট বেঁধে একটি কঠিন বা অর্ধ-কঠিন পদার্থে পরিণত হয়। এটি একটি কলয়েডাল সিস্টেমের জমাট বাঁধার উদাহরণ। ফারমেনটেশন ল্যাকটিক অ্যাসিড উৎপাদনে সাহায্য করে, যা পরে কোয়াগুলেশন ঘটায়।</p>",
+        },
+        {
+          id: 16,
+          question: "দুধে নিচের কোন disaccharide টি থাকে?",
+          options: {
+            a: "Sucrose",
+            b: "Cellulose",
+            c: "Lactose",
+            d: "Maltose",
+          },
+          correct: "c",
+          explanation:
+            "<p>দুধে প্রাকৃতিক শর্করা হিসেবে ল্যাকটোজ (Lactose) নামক একটি ডিস্যাকারাইড থাকে। এটি গ্লুকোজ এবং গ্যালাক্টোজ নামক দুটি মনোস্যাকারাইডের সমন্বয়ে গঠিত। ল্যাকটোজই দুধের মিষ্টি স্বাদের প্রধান কারণ। সুক্রোজ সাধারণ চিনি, সেলুলোজ উদ্ভিদে পাওয়া যায় এবং মাল্টোজ মল্টে থাকে।</p>",
+        },
+        {
+          id: 17,
+          question:
+            "নিচের কোন স্তন্যপায়ী প্রাণির (Mammals) দুগ্ধে ল্যাকটোজ সবচেয়ে বেশি থাকে?",
+          options: {
+            a: "মানুষ",
+            b: "মহিষ",
+            c: "ছাগল",
+            d: "গরু",
+          },
+          correct: "a",
+          explanation:
+            "<p>মানুষের দুধে ল্যাকটোজের পরিমাণ অন্যান্য স্তন্যপায়ী প্রাণীর দুধের তুলনায় বেশি থাকে। মানুষের দুধে প্রায় ৭% ল্যাকটোজ থাকে, যেখানে গরুর দুধে প্রায় ৪.৭-৫% এবং মহিষ বা ছাগলের দুধে এর চেয়ে কিছুটা কম থাকে। এই উচ্চ ল্যাকটোজের পরিমাণ নবজাতক শিশুর মস্তিষ্কের বিকাশ এবং শক্তি সরবরাহের জন্য গুরুত্বপূর্ণ।</p>",
+        },
+        {
+          id: 18,
+          question:
+            "নিচের কোন প্রাণির দুধে ল্যাকটোজ চিনির পরিমাণ সবচেয়ে বেশি থাকে?",
+          options: {
+            a: "মানুষ",
+            b: "মহিষ",
+            c: "গরু",
+            d: "ছাগল",
+          },
+          correct: "a",
+          explanation:
+            "<p>মানুষের দুধে ল্যাকটোজের পরিমাণ অন্যান্য স্তন্যপায়ী প্রাণীর দুধের তুলনায় বেশি থাকে। মানুষের দুধে প্রায় ৭% ল্যাকটোজ থাকে, যা শিশুর মস্তিষ্কের বিকাশ এবং প্রয়োজনীয় শক্তি সরবরাহে সহায়তা করে। গরুর দুধে ল্যাকটোজের পরিমাণ প্রায় ৪.৭-৫% এবং মহিষ ও ছাগলের দুধে এর চেয়ে কম থাকে।</p>",
+        },
+        {
+          id: 19,
+          question: "কোন প্রাণীর দুধে শক্তি (ক্যালরি) বেশি থাকে?",
+          options: {
+            a: "গাভী",
+            b: "মহিষ",
+            c: "ছাগল",
+            d: "ভেড়া",
+          },
+          correct: "b",
+          explanation:
+            "<p>মহিষের দুধে অন্যান্য প্রাণীর দুধের তুলনায় চর্বি এবং কঠিন পদার্থের পরিমাণ বেশি থাকে, যার ফলে এর ক্যালরি মূল্যও বেশি। মহিষের দুধে প্রায় ৬-৯% চর্বি থাকে, যেখানে গরুর দুধে ৩.৫-৪.৫%, ছাগলের দুধে প্রায় ৪.১% এবং ভেড়ার দুধে প্রায় ৭.৯% চর্বি থাকে। অধিক চর্বির কারণে মহিষের দুধ থেকে বেশি শক্তি (ক্যালরি) পাওয়া যায়।</p>",
+        },
+        {
+          id: 20,
+          question: "দুধের প্রধান প্রোটিন কোনটি?",
+          options: {
+            a: "লিপিড",
+            b: "ক্যারোটিন",
+            c: "ক্যাসিন",
+            d: "ল্যাকটালবুমিন",
+          },
+          correct: "c",
+          explanation:
+            "<p>দুধের প্রধান প্রোটিন হলো ক্যাসিন (Casein)। দুধের মোট প্রোটিনের প্রায় ৮০% ক্যাসিন থাকে। ক্যাসিন ফসফোপোট্রিন যা ক্যালসিয়াম এবং ফসফেটের সাথে একত্রিত হয়ে মাইসেল (micelles) গঠন করে। এই ক্যাসিন মাইসেলগুলো দুধকে সাদা রঙ দেয় এবং ছানা তৈরিতে গুরুত্বপূর্ণ ভূমিকা পালন করে। লিপিড হলো চর্বি, ক্যারোটিন হলো রঞ্জক এবং ল্যাকটালবুমিন একটি গৌণ দুগ্ধ প্রোটিন।</p>",
+        },
+        {
+          id: 21,
+          question: "দুধে নিচের কোন আয়নসমূহের সেটটি অধিক পরিমাণে থাকে?",
+          options: {
+            a: "K⁺, Ca²⁺, Cl⁻",
+            b: "Ca²⁺, Mg²⁺, Fe³⁺",
+            c: "K⁺, Cu²⁺, P³⁻",
+            d: "Na⁺, K⁺, Cl⁻",
+          },
+          correct: "a",
+          explanation:
+            "<p>দুধে প্রচুর পরিমাণে খনিজ লবণ থাকে যা মানবদেহের জন্য অপরিহার্য। এর মধ্যে পটাশিয়াম (K⁺), ক্যালসিয়াম (Ca²⁺) এবং ক্লোরাইড (Cl⁻) আয়নসমূহ উল্লেখযোগ্য পরিমাণে থাকে। ক্যালসিয়াম হাড় ও দাঁতের জন্য অত্যাবশ্যক, পটাশিয়াম রক্তচাপ নিয়ন্ত্রণে সাহায্য করে এবং ক্লোরাইড শরীরের তরল ভারসাম্য বজায় রাখে। অন্যান্য বিকল্পগুলোতে থাকা আয়নগুলোও দুধে থাকে, তবে K⁺, Ca²⁺, Cl⁻ এই সেটের আয়নগুলো তুলনামূলকভাবে অধিক পরিমাণে থাকে।</p>",
+        },
+        {
+          id: 22,
+          question:
+            "নিচের কোন প্রাণির দুধে প্রোটিনের পরিমাণ সবচেয়ে বেশি থাকে?",
+          options: {
+            a: "মানুষ",
+            b: "গরু",
+            c: "মহিষ",
+            d: "ভেড়ী",
+          },
+          correct: "d",
+          explanation:
+            "<p>ভেড়ার দুধে প্রোটিনের পরিমাণ অন্যান্য সাধারণ গৃহপালিত প্রাণীর দুধের তুলনায় উল্লেখযোগ্যভাবে বেশি থাকে। ভেড়ার দুধে সাধারণত ৫.৫-৬.৫% প্রোটিন থাকে, যেখানে গরুর দুধে প্রায় ৩.২-৩.৫%, মানুষের দুধে ১.২-১.৫% এবং মহিষের দুধে প্রায় ৪.৫% প্রোটিন থাকে। এই উচ্চ প্রোটিনের কারণে ভেড়ার দুধ পনির তৈরিতে খুব জনপ্রিয়।</p>",
+        },
+        {
+          id: 23,
+          question: "নিচের কোন প্রাণির দুধে চর্বির পরিমাণ সবচেয়ে বেশি থাকে?",
+          options: {
+            a: "গরু",
+            b: "মহিষ",
+            c: "ছাগল",
+            d: "মানুষ",
+          },
+          correct: "b",
+          explanation:
+            "<p>মহিষের দুধে চর্বির পরিমাণ অন্যান্য সাধারণ গৃহপালিত প্রাণীর দুধের তুলনায় সবচেয়ে বেশি থাকে। মহিষের দুধে প্রায় ৬-৯% চর্বি থাকতে পারে, যেখানে গরুর দুধে ৩.৫-৪.৫%, ছাগলের দুধে প্রায় ৪.১% এবং মানুষের দুধে ৩.৫-৪% চর্বি থাকে। এই উচ্চ চর্বির কারণে মহিষের দুধ থেকে বেশি ক্রিম এবং ঘি তৈরি করা যায়।</p>",
+        },
+        {
+          id: 24,
+          question:
+            "সংগৃহীত দুধের pH নিয়ন্ত্রণের জন্য নিচের কোনটি মেশানো হয়?",
+          options: {
+            a: "NaHCO₃",
+            b: "H₂O₂",
+            c: "NaCl",
+            d: "NH₄",
+          },
+          correct: "a",
+          explanation:
+            "<p>সংগৃহীত দুধের pH নিয়ন্ত্রণের জন্য সোডিয়াম বাইকার্বনেট (NaHCO₃) বা বেকিং সোডা মেশানো হয়। এটি একটি মৃদু ক্ষার যা দুধের অম্লতা কমাতে এবং এটিকে নষ্ট হওয়া থেকে রক্ষা করতে সাহায্য করে। দুধের অম্লতা বৃদ্ধি পেলে এটি জমাট বাঁধতে শুরু করে। H₂O₂ (হাইড্রোজেন পারক্সাইড) একটি অ্যান্টিসেপটিক, NaCl (লবণ) একটি প্রিজারভেটিভ, এবং NH₄ (অ্যামোনিয়াম আয়ন) সাধারণত pH নিয়ন্ত্রণের জন্য ব্যবহৃত হয় না।</p>",
+        },
+        {
+          id: 25,
+          question: "তরল দুধ সংরক্ষণে কোন পদ্ধতি অবলম্বন করা হয়?",
+          options: {
+            a: "হিমায়ন",
+            b: "কৌটাজাতকরণ",
+            c: "পাস্তুরাইজিং",
+            d: "ভিনেগার ব্যবহার",
+          },
+          correct: "c",
+          explanation:
+            "<p>তরল দুধ সংরক্ষণে প্রধানত পাস্তুরাইজিং (Pasteurization) পদ্ধতি অবলম্বন করা হয়। এই পদ্ধতিতে দুধকে একটি নির্দিষ্ট তাপমাত্রায় (যেমন ৭২°C) অল্প সময়ের জন্য (১৫-২০ সেকেন্ড) উত্তপ্ত করে দ্রুত ঠান্ডা করা হয়। এতে দুধের ক্ষতিকর ব্যাকটেরিয়া ধ্বংস হয় কিন্তু এর পুষ্টিগুণ ও স্বাদ অক্ষুণ্ন থাকে, ফলে দুধকে রেফ্রিজারেটরে কয়েকদিন পর্যন্ত সংরক্ষণ করা যায়। হিমায়ন ও কৌটাজাতকরণও সংরক্ষণের পদ্ধতি, কিন্তু তরল দুধের জন্য পাস্তুরাইজিং সবচেয়ে প্রচলিত। ভিনেগার ব্যবহার করলে দুধ জমাট বেঁধে যায়।</p>",
+        },
+        {
+          id: 26,
+          question: "মাখনকে পানিমুক্ত করা হয় কোন পদ্ধতিতে?",
+          options: {
+            a: "পানি শোষণ করে",
+            b: "মাখনকে চাপ দিয়ে দলিত করে",
+            c: "মাখনে P₂O₅ যোগ করে",
+            d: "মাখনে CaO যোগ করে",
+          },
+          correct: "b",
+          explanation:
+            "<p>মাখনকে পানিমুক্ত করার একটি প্রচলিত পদ্ধতি হলো এটিকে চাপ দিয়ে দলিত করা (Working the butter)। মাখনে সাধারণত কিছু পরিমাণ পানি আটকে থাকে। এই প্রক্রিয়াতে মাখনকে মেকানিক্যালি চাপানো এবং ঘুরানো হয়, যার ফলে পানির ক্ষুদ্র ফোঁটাগুলো একত্রিত হয়ে বড় ফোঁটায় পরিণত হয় এবং মাখন থেকে আলাদা হয়ে যায়। এটি মাখনের টেক্সচার উন্নত করে এবং এর সংরক্ষণকাল বাড়ায়। P₂O₅ (ফসফরাস পেন্টক্সাইড) বা CaO (ক্যালসিয়াম অক্সাইড) যোগ করে মাখনকে পানিমুক্ত করা হয় না।</p>",
+        },
+        {
+          id: 27,
+          question: "কোনটি দুধের মিষ্টতা বাড়ায়?",
+          options: {
+            a: "সায়ট্রেট",
+            b: "খনিজ লবণ",
+            c: "প্রোটিন",
+            d: "ল্যাকটোজ",
+          },
+          correct: "d",
+          explanation:
+            "<p>দুধের প্রাকৃতিক মিষ্টতার প্রধান কারণ হলো ল্যাকটোজ (Lactose)। এটি একটি ডিস্যাকারাইড শর্করা যা দুধের মধ্যে বিদ্যমান থাকে। যখন দুধের পরিমাণ বা ল্যাকটোজের ঘনত্ব বৃদ্ধি পায়, তখন দুধের মিষ্টতাও বৃদ্ধি পায়। সায়ট্রেট (সাইট্রেট) একটি লবণ, খনিজ লবণ এবং প্রোটিন দুধের পুষ্টি উপাদান হলেও এরা সরাসরি মিষ্টতা বাড়ায় না।</p>",
+        },
+        {
+          id: 28,
+          question: "গাভীর দুধে খাদ্য ক্যালরি (kcal/100g) কত (w/v%)?",
+          options: {
+            a: "72",
+            b: "66",
+            c: "70",
+            d: "102",
+          },
+          correct: "c",
+          explanation:
+            "<p>সাধারণত, ১০০ গ্রাম গাভীর দুধে প্রায় ৭০ কিলোক্যালরি (kcal) খাদ্য শক্তি থাকে। এই ক্যালরি দুধের কার্বোহাইড্রেট (ল্যাকটোজ), প্রোটিন (ক্যাসিন ও হুই প্রোটিন) এবং চর্বি থেকে আসে। দুধের পুষ্টিগুণ এবং ক্যালরি পরিমাণ বিভিন্ন উপাদান, যেমন চর্বির পরিমাণের ওপর নির্ভর করে কিছুটা পরিবর্তিত হতে পারে, তবে ৭০ kcal একটি গড় মান।</p>",
+        },
+        {
+          id: 29,
+          question: "শতকরা হিসাবে দুধের প্রধান উপাদান কোনটি?",
+          options: {
+            a: "চর্বি",
+            b: "আমিষ",
+            c: "শর্করা",
+            d: "পানি",
+          },
+          correct: "d",
+          explanation:
+            "<p>দুধের প্রধান উপাদান হলো পানি। শতকরা হিসাবে, দুধে প্রায় ৮৭% পানি থাকে। বাকি ১৩% এর মধ্যে চর্বি, আমিষ (প্রোটিন), শর্করা (ল্যাকটোজ), ভিটামিন এবং খনিজ লবণ থাকে। তাই পানিই দুধের সবচেয়ে বেশি পরিমাণে থাকা উপাদান।</p>",
+        },
+        {
+          id: 30,
+          question: "গাভীর দুধে কত % পানি থাকে?",
+          options: {
+            a: "78.2",
+            b: "80.2",
+            c: "87.2",
+            d: "90.2",
+          },
+          correct: "c",
+          explanation:
+            "<p>গাভীর দুধে সাধারণত ৮৭.২% থেকে ৮৮% পানি থাকে। এটি দুধের একটি প্রধান উপাদান এবং দুধকে তরল অবস্থায় রাখতে সাহায্য করে। বাকি অংশ কঠিন পদার্থ, যেমন চর্বি, প্রোটিন, ল্যাকটোজ, ভিটামিন এবং খনিজ লবণ নিয়ে গঠিত।</p>",
+        },
+        {
+          id: 31,
+          question: "সর্বোচ্চ শক্তি পাওয়া যায় নিম্নের কোন খাদ্যটি থেকে?",
+          options: {
+            a: "মাখন",
+            b: "ডিম",
+            c: "দুধ",
+            d: "চিনি",
+          },
+          correct: "a",
+          explanation:
+            "<p>মাখন হলো একটি উচ্চ চর্বিযুক্ত খাদ্য এবং চর্বি প্রতি গ্রাম কার্বোহাইড্রেট বা প্রোটিনের চেয়ে প্রায় দ্বিগুণ শক্তি সরবরাহ করে। প্রতি ১০০ গ্রাম মাখনে প্রায় ৭০০-৭৫০ কিলোক্যালরি শক্তি থাকে। অন্যদিকে, ডিম, দুধ এবং চিনিতে মাখনের তুলনায় কম শক্তি থাকে। ডিম ও দুধ প্রোটিন ও অন্যান্য পুষ্টির উৎস এবং চিনি শর্করা সরবরাহ করে। তাই প্রদত্ত বিকল্পগুলোর মধ্যে মাখন থেকেই সর্বোচ্চ শক্তি পাওয়া যায়।</p>",
+        },
+        {
+          id: 32,
+          question: "দুধে কয় ধরনের ক্যাসিন বর্তমান থাকে?",
+          options: {
+            a: "2",
+            b: "3",
+            c: "4",
+            d: "5",
+          },
+          correct: "c",
+          explanation:
+            "<p>দুধে প্রধানত চার ধরনের ক্যাসিন প্রোটিন বর্তমান থাকে। এগুলি হল: আলফা-এস১ (αs1), আলফা-এস২ (αs2), বিটা (β) এবং কাপা (κ) ক্যাসিন। এই ক্যাসিনগুলো একত্রিত হয়ে ক্যাসিন মাইসেল (micelles) গঠন করে, যা দুধকে সাদা দেখায় এবং এর পুষ্টিগুণে গুরুত্বপূর্ণ ভূমিকা পালন করে।</p>",
+        },
+        {
+          id: 33,
+          question: "দুধে প্রাকৃতিক ইমালসিফায়ার হিসেবে কোনটি থাকে?",
+          options: {
+            a: "ল্যাকটোজ",
+            b: "চর্বি",
+            c: "প্রোটিন",
+            d: "গ্যালাক্টোজ",
+          },
+          correct: "c",
+          explanation:
+            "<p>দুধে প্রাকৃতিক ইমালসিফায়ার হিসেবে প্রোটিন (বিশেষ করে ক্যাসিন প্রোটিন) কাজ করে। দুধ একটি ইমালশন, যেখানে চর্বির কণাগুলো পানিতে ছড়িয়ে থাকে। প্রোটিন কণাগুলো চর্বির কণাগুলোর চারপাশে একটি স্থিতিশীল আবরণ তৈরি করে, যা চর্বি এবং পানির স্তরকে আলাদা হতে বাধা দেয় এবং ইমালশনকে স্থিতিশীল রাখে। ল্যাকটোজ শর্করা এবং চর্বি নিজেই ইমালসিফায়ার নয়।</p>",
+        },
+        {
+          id: 34,
+          question: "কোনটি প্রোটিন?",
+          options: {
+            a: "ক্যাসিন",
+            b: "ল্যাকটোজ",
+            c: "সাইট্রিক এসিড",
+            d: "BHT",
+          },
+          correct: "a",
+          explanation:
+            "<p>ক্যাসিন (Casein) হলো দুধের প্রধান প্রোটিন। দুধের মোট প্রোটিনের প্রায় ৮০% ক্যাসিন থাকে। ল্যাকটোজ হলো দুধের শর্করা (ডিস্যাকারাইড)। সাইট্রিক অ্যাসিড একটি জৈব অ্যাসিড এবং BHT (Butylated Hydroxytoluene) একটি কৃত্রিম অ্যান্টিঅক্সিডেন্ট। তাই প্রদত্ত বিকল্পগুলোর মধ্যে ক্যাসিনই একমাত্র প্রোটিন।</p>",
+        },
+        {
+          id: 35,
+          question: "রাসায়নিক সংযুক্তির দিক থেকে একই কোন যুগল?",
+          options: {
+            a: "দুধ ও মাখন",
+            b: "মাখন ও ঘি",
+            c: "গ্লাস ক্লিনার ও টয়লেট ক্লিনার",
+            d: "সাবান ও ডিটারজেন্ট",
+          },
+          correct: "b",
+          explanation:
+            "<p>রাসায়নিক সংযুক্তির দিক থেকে মাখন এবং ঘি কিছুটা একই ধরনের কারণ উভয়ই প্রধানত দুগ্ধজাত চর্বি দিয়ে গঠিত। ঘি হলো মাখন থেকে পানি এবং অন্যান্য কঠিন পদার্থ (যেমন প্রোটিন, ল্যাকটোজ) অপসারণ করে প্রস্তুত করা একটি বিশুদ্ধ চর্বি। তাই এদের মৌলিক রাসায়নিক গঠন অনেকটা একই ধরনের থাকে। দুধ একটি জটিল ইমালশন, মাখন একটি তেলে-পানির ইমালশন, এবং সাবান ও ডিটারজেন্টের রাসায়নিক গঠন ভিন্ন। গ্লাস ক্লিনার ও টয়লেট ক্লিনার ভিন্ন রাসায়নিক দ্রব্য।</p>",
+        },
+        {
+          id: 36,
+          question: "মাখনে চর্বি ও পানির অনুপাত কত?",
+          options: {
+            a: "80 : 18",
+            b: "20 : 80",
+            c: "28 : 72",
+            d: "60 : 40",
+          },
+          correct: "a",
+          explanation:
+            "<p>মাখনে চর্বি এবং পানির অনুপাত প্রায় ৮০% চর্বি এবং ১৮% পানি থাকে। বাকি ২% দুধের কঠিন পদার্থ, যেমন প্রোটিন এবং ল্যাকটোজ নিয়ে গঠিত। এই অনুপাত মাখনের গঠন, স্বাদ এবং টেক্সচারের জন্য গুরুত্বপূর্ণ। মাখন মূলত একটি তেলে-পানির ইমালশন যেখানে চর্বি প্রধান উপাদান।</p>",
+        },
+        {
+          id: 37,
+          question: "কত তাপমাত্রায় মাখন গলে যায়?",
+          options: {
+            a: "64°C",
+            b: "55°C",
+            c: "70°C",
+            d: "100°C",
+          },
+          correct: "a",
+          explanation:
+            "<p>মাখন সাধারণত ৩২°C থেকে ৩৫°C তাপমাত্রার মধ্যে গলতে শুরু করে। এটি কক্ষ তাপমাত্রায় নরম থাকে। তবে, 'গলে যায়' বলতে যদি সম্পূর্ণ তরলে পরিণত হওয়ার তাপমাত্রা বোঝানো হয়, তবে প্রায় ৬৪°C তাপমাত্রায় মাখন সম্পূর্ণরূপে গলে স্বচ্ছ তরলে পরিণত হতে পারে, বিশেষ করে যখন এটিকে ঘি বানানোর জন্য উত্তপ্ত করা হয়। প্রদত্ত বিকল্পগুলোর মধ্যে ৬৪°C তাপমাত্রাটি সম্পূর্ণ গলে যাওয়ার জন্য অধিকতর উপযুক্ত।</p>",
+        },
+        {
+          id: 38,
+          question: "দুধে কোনটির পরিমাণ বেশি থাকলে আপেক্ষিক গুরুত্ব কমে যায়?",
+          options: {
+            a: "আমিষ",
+            b: "সুগার",
+            c: "খনিজ",
+            d: "ফ্যাট",
+          },
+          correct: "d",
+          explanation:
+            "<p>দুধে ফ্যাটের (চর্বি) পরিমাণ বেশি থাকলে এর আপেক্ষিক গুরুত্ব (Specific Gravity) কমে যায়। চর্বি পানির চেয়ে হালকা, তাই দুধে চর্বির পরিমাণ যত বেশি হবে, দুধের ঘনত্ব তত কম হবে এবং ফলস্বরূপ আপেক্ষিক গুরুত্বও কমে যাবে। আমিষ, সুগার এবং খনিজ লবণ পানির চেয়ে ঘন, তাই এদের পরিমাণ বেশি থাকলে আপেক্ষিক গুরুত্ব বৃদ্ধি পায়।</p>",
+        },
+        {
+          id: 39,
+          question: "গরুর দুধে চর্বির শতকরা পরিমাণ-",
+          options: {
+            a: "1.1-3.1",
+            b: "3.5-4.5",
+            c: "4.6-6.8",
+            d: "7.0-8.5",
+          },
+          correct: "b",
+          explanation:
+            "<p>গরুর দুধে চর্বির শতকরা পরিমাণ সাধারণত ৩.৫% থেকে ৪.৫% এর মধ্যে থাকে। এটি গরুর জাত এবং খাদ্যের ওপর নির্ভর করে কিছুটা ভিন্ন হতে পারে। মহিষ বা ভেড়ার দুধে চর্বির পরিমাণ এর চেয়ে বেশি থাকে, যা তাদের দুধকে আরও ঘন এবং ক্যালরি সমৃদ্ধ করে তোলে।</p>",
+        },
+      ];
+
+      const totalQuestions = questions.length;
+      let timeLeft = Math.floor(totalQuestions / 2) * 60;
+      const timerElement = document.getElementById("timer");
+      let timerInterval;
+
+      function updateTimer() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerElement.innerText = `${toBengaliNumber(
+          minutes
+        )} মিনিট ${toBengaliNumber(seconds)} সেকেন্ড`;
+
+        if (timeLeft > 0) {
+          timeLeft--;
+        } else {
+          stopTimer();
+          confirmSubmit();
+        }
+      }
+
+      function startTimer() {
+        console.log("Starting timer");
+        timerElement.innerText = `${toBengaliNumber(
+          Math.floor(timeLeft / 60)
+        )} মিনিট ${toBengaliNumber(timeLeft % 60)} সেকেন্ড`;
+        timerInterval = setInterval(updateTimer, 1000);
+      }
+
+      function stopTimer() {
+        clearInterval(timerInterval);
+        console.log("Timer stopped");
+      }
+
+      function toBengaliNumber(num) {
+        const bengaliDigits = [
+          "০",
+          "১",
+          "২",
+          "৩",
+          "৪",
+          "৫",
+          "৬",
+          "৭",
+          "৮",
+          "৯",
+        ];
+        let numStr = num.toString();
+
+        let isNegative = num < 0;
+        if (isNegative) {
+          numStr = numStr.substring(1);
+        }
+
+        if (numStr.includes(".")) {
+          let [integerPart, decimalPart] = numStr.split(".");
+          let integerBengali = integerPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          let decimalBengali = decimalPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (
+            (isNegative ? "−" : "") + integerBengali + "." + decimalBengali
+          );
+        } else {
+          let integerBengali = numStr
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (isNegative ? "−" : "") + integerBengali;
+        }
+      }
+
+      function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      function generateQuestions() {
+        console.log("Generating questions");
+        const examContainer = document.querySelector("#exam");
+        if (!examContainer) {
+          console.error("Exam container (#exam) not found!");
+          return;
+        }
+        examContainer.innerHTML = "";
+        console.log("Questions array:", questions);
+        const shuffledQuestions = shuffleArray([...questions]);
+        shuffledQuestions.forEach((question, index) => {
+          console.log(`Generating question ${index + 1}:`, question);
+          const questionDiv = document.createElement("div");
+          questionDiv.classList.add("question-container");
+          questionDiv.setAttribute("data-question", question.id);
+          questionDiv.setAttribute("data-correct", question.correct);
+
+          let optionsHTML = "";
+          for (let option in question.options) {
+            optionsHTML += `
+                                            <label class="option" data-option="${option}">
+                                              <div class="circle">${option}</div>
+                                              <span class="option-text">${question.options[option]}</span>
+                                            </label>
+                                          `;
+          }
+
+          const explanationHTML = question.explanation
+            ? `<div class="explanation-dropdown">
+                                               <button class="explanation-btn">ব্যাখ্যা দেখো</button>
+                                               <div class="explanation-content">
+                                                 <div class="explanation-label">ব্যাখ্যা:</div>
+                                                 ${question.explanation}
+                                               </div>
+                                             </div>`
+            : "";
+
+          questionDiv.innerHTML = `
+                                          <p class="question-label">${
+                                            index + 1
+                                          }. ${question.question}</p>
+                                          <div class="options">
+                                            ${optionsHTML}
+                                          </div>
+                                          ${explanationHTML}
+                                        `;
+          examContainer.appendChild(questionDiv);
+          console.log(`Appended question ${index + 1} to exam container`);
+        });
+
+        const questionContainers = document.querySelectorAll(
+          ".question-container"
+        );
+        console.log(`Found ${questionContainers.length} question containers`);
+        questionContainers.forEach((container, idx) => {
+          console.log(`Setting question ${idx + 1} to visible`);
+          container.style.display = "block";
+        });
+
+        document.querySelectorAll(".option").forEach((option) => {
+          option.addEventListener(
+            "click",
+            function (e) {
+              e.preventDefault();
+              const parent = this.closest(".question-container");
+              if (parent.classList.contains("locked")) return;
+              parent.classList.add("locked");
+              parent.querySelectorAll(".option").forEach((el) => {
+                if (el !== this) {
+                  el.style.pointerEvents = "none";
+                  el.style.cursor = "default";
+                }
+                el.classList.remove("selected");
+              });
+              this.classList.add("selected");
+              console.log(
+                `Option selected for question ${parent.getAttribute(
+                  "data-question"
+                )}: ${this.getAttribute("data-option")}`
+              );
+            },
+            { once: true }
+          );
+        });
+
+        document.querySelectorAll(".explanation-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            const content = this.nextElementSibling;
+            content.classList.toggle("visible");
+            this.classList.toggle("active");
+            console.log("Toggled explanation visibility");
+          });
+        });
+
+        const examInfo = document.getElementById("exam-info");
+        if (examInfo) {
+          examInfo.innerText = `পূর্ণ নম্বরঃ ${toBengaliNumber(
+            totalQuestions
+          )}`;
+          console.log("Exam info updated");
+        } else {
+          console.error("Exam info element not found!");
+        }
+      }
+
+      function initializeChart() {
+        console.log("Initializing chart");
+        const ctx = document.getElementById("scoreChart").getContext("2d");
+        chartInstance = new Chart(ctx, {
+          type: "pie",
+          data: {
+            labels: ["ঠিক উত্তর", "ভুল উত্তর", "অনুত্তরিত"],
+            datasets: [
+              {
+                data: [0, 0, 0],
+                backgroundColor: ["#34c759", "#ff3b30", "#007aff"],
+                borderColor: "#fff",
+                borderWidth: 2,
+                hoverOffset: 10,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "10%",
+            layout: {
+              padding: 10,
+            },
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: {
+                  font: {
+                    family: '"Hind Siliguri", sans-serif',
+                    size: 13,
+                    weight: "bold",
+                  },
+                  color: "#333",
+                  padding: 12,
+                  boxWidth: 14,
+                  generateLabels: (chart) => {
+                    const data = chart.data;
+                    return data.labels.map((label, i) => ({
+                      text: label,
+                      font: {
+                        family: '"Hind Siliguri", sans-serif',
+                      },
+                      fillStyle: data.datasets[0].backgroundColor[i],
+                      hidden: !chart.getDataVisibility(i),
+                      index: i,
+                    }));
+                  },
+                },
+              },
+              tooltip: {
+                backgroundColor: "rgba(0, 0, 0, 0.9)",
+                cornerRadius: 6,
+                titleFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 14,
+                  weight: "bold",
+                },
+                bodyFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 13,
+                },
+                padding: 10,
+                boxPadding: 5,
+              },
+            },
+            animation: {
+              animateScale: true,
+              animateRotate: true,
+              duration: 1000,
+              easing: "easeOutQuart",
+            },
+            elements: {
+              arc: {
+                borderRadius: 8,
+              },
+            },
+            onClick: (e, elements) => {
+              if (elements.length > 0) {
+                const index = elements[0].index;
+                const filter = ["correct", "wrong", "unanswered"][index];
+                filterQuestions(filter);
+              } else {
+                filterQuestions("all");
+              }
+            },
+          },
+        });
+        console.log("Chart initialized");
+      }
+
+      function filterQuestions(type) {
+        console.log(`Filtering questions by type: ${type}`);
+        document.querySelectorAll(".question-container").forEach((question) => {
+          const status = question.getAttribute("data-status");
+          if (type === "all" || status === type) {
+            question.style.display = "block";
+          } else {
+            question.style.display = "none";
+          }
+        });
+      }
+
+      function showConfirmPopup() {
+        console.log("Showing confirm popup");
+        document.getElementById("confirmPopup").style.display = "block";
+      }
+
+      function autoSubmitScore() {
+        console.log("Auto-submitting score");
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document.querySelectorAll(".question-container").forEach((question) => {
+          let correctAnswer = question.getAttribute("data-correct");
+          let selectedOption = question.querySelector(".option.selected");
+
+          if (selectedOption) {
+            answered++;
+            let chosenAnswer = selectedOption.getAttribute("data-option");
+            if (chosenAnswer === correctAnswer) {
+              score += 1;
+              correct++;
+              question.setAttribute("data-status", "correct");
+            } else {
+              score -= 0.25;
+              wrong++;
+              question.setAttribute("data-status", "wrong");
+            }
+          } else {
+            unanswered++;
+            question.setAttribute("data-status", "unanswered");
+          }
+        });
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        const formData = new FormData();
+        formData.append("userID", userID);
+        formData.append("finalScore", score.toFixed(2));
+        formData.append("correctAnswers", correct);
+        formData.append("wrongAnswers", wrong);
+        formData.append("unanswered", unanswered);
+
+        const url = "https://formspree.io/f/xpwy";
+        navigator.sendBeacon(url, formData);
+        console.log("Auto-submission sent via sendBeacon for userID:", userID);
+      }
+
+      function confirmSubmit() {
+        console.log("Confirming submission");
+        document.getElementById("confirmPopup").style.display = "none";
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document
+          .querySelectorAll(".question-container")
+          .forEach((question, index) => {
+            let correctAnswer = question.getAttribute("data-correct");
+            let selectedOption = question.querySelector(".option.selected");
+
+            if (selectedOption) {
+              answered++;
+              let chosenAnswer = selectedOption.getAttribute("data-option");
+              if (chosenAnswer === correctAnswer) {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("correct-text");
+                score += 1;
+                correct++;
+                question.setAttribute("data-status", "correct");
+              } else {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("incorrect-text");
+                question
+                  .querySelector(
+                    `[data-option="${correctAnswer}"] .option-text`
+                  )
+                  .classList.add("correct-text");
+                score -= 0.25;
+                wrong++;
+                question.setAttribute("data-status", "wrong");
+              }
+            } else {
+              question
+                .querySelector(`[data-option="${correctAnswer}"] .option-text`)
+                .classList.add("unattempted-text");
+              unanswered++;
+              question.setAttribute("data-status", "unanswered");
+            }
+            question.style.display = "block";
+
+            const explanationDropdown = question.querySelector(
+              ".explanation-dropdown"
+            );
+            if (explanationDropdown) {
+              explanationDropdown.classList.add("visible");
+            }
+          });
+
+        const chartContainer = document.querySelector(".chart-container");
+        chartContainer.classList.add("visible");
+        if (!chartInstance) {
+          initializeChart();
+        }
+        chartInstance.data.datasets[0].data = [correct, wrong, unanswered];
+        chartInstance.update();
+        console.log("Chart updated with data:", [correct, wrong, unanswered]);
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        document.getElementById("totalQuestions").innerText =
+          toBengaliNumber(total);
+        document.getElementById("answered").innerText =
+          toBengaliNumber(answered);
+        document.getElementById("correctAnswers").innerText =
+          toBengaliNumber(correct);
+        document.getElementById("wrongAnswers").innerText =
+          toBengaliNumber(wrong);
+        document.getElementById("unanswered").innerText =
+          toBengaliNumber(unanswered);
+        document.getElementById("finalScore").innerText = toBengaliNumber(
+          score.toFixed(2)
+        );
+
+        document.getElementById("formUserID").value = userID;
+        document.getElementById("formFinalScore").value = score.toFixed(2);
+        document.getElementById("formCorrectAnswers").value = correct;
+        document.getElementById("formWrongAnswers").value = wrong;
+        document.getElementById("formUnanswered").value = unanswered;
+
+        document.getElementById("submitBtn").style.display = "none";
+
+        document.getElementById("scorePopup").style.display = "block";
+
+        const form = document.getElementById("scoreForm");
+        fetch(form.action, {
+          method: "POST",
+          body: new FormData(form),
+          headers: {
+            Accept: "application/json",
+          },
+        })
+          .then((response) => {
+            if (response.ok) {
+              console.log("Form submitted successfully");
+              form.reset();
+            } else {
+              console.error("Form submission failed:", response.statusText);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+
+      function cancelSubmit() {
+        console.log("Canceling submission");
+        document.getElementById("confirmPopup").style.display = "none";
+      }
+
+      document
+        .getElementById("submitBtn")
+        .addEventListener("click", function () {
+          console.log("Submit button clicked");
+          showConfirmPopup();
+        });
+
+      function closePopup() {
+        console.log("Closing score popup");
+        const scorePopup = document.getElementById("scorePopup");
+        scorePopup.classList.add("slide-out");
+        setTimeout(() => {
+          scorePopup.style.display = "none";
+          scorePopup.classList.remove("slide-out");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }, 500);
+      }
+
+      document
+        .getElementById("scoreForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          console.log("Score form submitted");
+          closePopup();
+        });
+    </script>
+  </body>
+</html>
